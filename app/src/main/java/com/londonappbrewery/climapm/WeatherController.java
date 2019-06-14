@@ -2,6 +2,7 @@ package com.londonappbrewery.climapm;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
@@ -11,6 +12,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -69,19 +71,42 @@ public class WeatherController extends AppCompatActivity {
 
         // TODO: Add an OnClickListener to the changeCityButton here:
 
+        changeCityButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent myIntent = new Intent(WeatherController.this, ChangeCityController.class);
+                startActivity(myIntent);
+            }
+        });
+
     }
 
 
     // TODO: Add onResume() here:
-    @Override
     protected void onResume() {
         super.onResume();
         Log.d(LOGCAT_TAG, "onResume() called");
-        getWeatherForCurrentLocation();
+        Intent myIntent = getIntent();
+        String city = myIntent.getStringExtra( "City");
+        if(city!=null){
+            Log.d(LOGCAT_TAG,"Get new city: "+city);
+            getWeatherForNewCity(city);
+        }else{
+            Log.d(LOGCAT_TAG,"Getting weather for current location");
+            getWeatherForCurrentLocation();
+        }
     }
 
 
     // TODO: Add getWeatherForNewCity(String city) here:
+    private void getWeatherForNewCity(String city){
+
+        RequestParams params = new RequestParams();
+        params.put("q",city);
+        params.put("appid",APP_ID);
+        letsDoSomeNetworking(params);
+
+    }
 
 
     // TODO: Add getWeatherForCurrentLocation() here:
@@ -104,7 +129,7 @@ public class WeatherController extends AppCompatActivity {
                         params.put("lon", longitude);
                         params.put("appid",APP_ID);
                         letsDoSomeNetworking(params);
-                    };
+                    }
 
 
 
@@ -124,7 +149,7 @@ public class WeatherController extends AppCompatActivity {
                 Log.d("Clima", "onProviderDisabled() callback received");
             }
         };
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             ActivityCompat.requestPermissions(this,
                     new String[] {Manifest.permission.ACCESS_FINE_LOCATION},
@@ -171,6 +196,8 @@ public class WeatherController extends AppCompatActivity {
             public void onSuccess(int statusCode,Header[] headers,
                                   JSONObject response) {
                 Log. d(LOGCAT_TAG,"Sucess! JSON: "+response.toString());
+                WeatherDataModel weatherData = WeatherDataModel.fromJson(response);
+                updateUI(weatherData);
             }
             @Override
             public void onFailure(int statusCode,Header[] headers, Throwable
